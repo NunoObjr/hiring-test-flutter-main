@@ -1,49 +1,48 @@
 # Teste técnico Flutter — Cotação de moedas via WebSocket
 
-Solução de um **desafio técnico de Flutter** (template `foxbit_hiring_test_template`): uma tela que lista pares de moedas negociados (ex.: `BTC/BRL`) e mostra a **cotação em tempo real**, consumindo uma API **WebSocket**. O projeto segue **Clean Architecture** com `flutter_clean_architecture` e inclui testes automatizados para a camada de conexão.
+Base de um **desafio técnico de Flutter** (template `foxbit_hiring_test_template`): construir uma tela que lista pares de moedas negociados (ex.: `BTC/BRL`) e mostra a **cotação em tempo real**, consumindo uma API **WebSocket**. O projeto está estruturado em **Clean Architecture** com `flutter_clean_architecture`.
+
+> **Status:** ponto de partida. A infraestrutura de WebSocket, o *use case* de heartbeat, o widget de cotação e o teste de ping estão prontos; a listagem (`getInstruments`) e a assinatura de cotações (`SubscribeLevel1`) descritas no desafio ainda **não foram implementadas**.
 
 O enunciado original, com os critérios de avaliação e o contrato do WebSocket, está em [ENUNCIADO.md](ENUNCIADO.md).
 
-## O que o app faz
+## O que já existe
 
-1. Abre a conexão WebSocket e mantém o *heartbeat*.
-2. Chama `getInstruments` para listar os pares disponíveis (`InstrumentId`, `Symbol`, `SortIndex`).
-3. Faz `SubscribeLevel1` para cada par e atualiza a tela a cada mudança: `LastTradedPx` (cotação atual), `Rolling24HrVolume` e `Rolling24HrPxChange`.
+| Item | Onde |
+| --- | --- |
+| Helper de conexão WebSocket com geração de ids e `BehaviorSubject` para as respostas | `lib/data/helpers/websocket.dart` |
+| Contrato e implementação do repositório de *heartbeat* | `lib/domain/repositories`, `lib/data/repositories` |
+| *Use case* de heartbeat (`HeartbeatUseCase`) | `lib/domain/usecases` |
+| Tela inicial e widget de card de cotação (`CotationWidget`) | `lib/app/pages/home`, `lib/app/widgets` |
+| Teste de conexão e ping do WebSocket | `test/websocket_ping_test.dart` |
+
+## Próximos passos (conforme o desafio)
+
+- [ ] Implementar `getInstruments` e listar os pares (`InstrumentId`, `Symbol`, `SortIndex`)
+- [ ] Assinar `SubscribeLevel1` por par e atualizar `LastTradedPx`, `Rolling24HrVolume` e `Rolling24HrPxChange`
+- [ ] Ligar os dados ao `CotationWidget` na tela inicial
+- [ ] Cobrir os novos fluxos com testes automatizados
 
 ## Conceitos técnicos
 
-**Clean Architecture em quatro camadas.**
+**Clean Architecture em camadas.**
 
 | Camada | Pasta | Papel |
 | --- | --- | --- |
-| Domain | `lib/domain` | Contratos de repositório e *use cases* (`HeartbeatUseCase`) |
-| Data | `lib/data` | Implementação dos repositórios e o helper de WebSocket |
+| Domain | `lib/domain` | Contratos de repositório e *use cases* |
+| Data | `lib/data` | Implementação dos repositórios e helper de WebSocket |
 | Device | `lib/device` | Recursos específicos do dispositivo |
-| App | `lib/app` | Páginas (padrão **MVP/Presenter** + Controller), widgets e navegação |
+| App | `lib/app` | Páginas (View + Controller + Presenter), widgets e navegação |
 
-**Padrão View–Controller–Presenter.** O pacote `flutter_clean_architecture` divide cada tela em `View`, `Controller` e `Presenter`; o *presenter* executa os *use cases* e entrega os resultados ao controller, que atualiza a view.
+**View–Controller–Presenter.** O pacote `flutter_clean_architecture` divide cada tela em `View`, `Controller` e `Presenter`; o *presenter* executa os *use cases* e devolve os resultados ao controller, que atualiza a view.
 
-**Streams e programação reativa.** Os *use cases* retornam `Stream`s e a atualização contínua de cotações é tratada com `rxdart`.
+**Streams e programação reativa.** Os *use cases* retornam `Stream`s, e `rxdart` (`BehaviorSubject`) entrega a última mensagem recebida a quem se inscrever.
 
-**Protocolo de mensagens WebSocket.** Cada mensagem é um envelope JSON `{ m, i, n, o }` (tipo, sequência, nome da chamada e *payload* serializado em string), que exige decodificar duas vezes (envelope e `o`).
-
-**Testes.** `test/` contém testes de ping/conexão do WebSocket e um observador de testes padrão, para validar a comunicação sem depender da interface.
+**Protocolo de mensagens.** Cada mensagem é um envelope JSON `{ m, i, n, o }` (tipo, sequência, nome da chamada e *payload* serializado em string), o que exige decodificar duas vezes (envelope e `o`).
 
 ## Stack
 
 Flutter · Dart · `flutter_clean_architecture` · `rxdart` · `websok` · `lint`
-
-## Estrutura
-
-```
-lib/
-  app/        # pages (home), widgets (cotation_widget), navigator
-  data/       # websocket helper, repositories
-  device/     # utilitários de dispositivo
-  domain/     # repositories (contratos), usecases
-  main.dart
-test/         # conexão/ping do WebSocket
-```
 
 ## Como executar
 
